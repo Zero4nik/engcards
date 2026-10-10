@@ -6,3 +6,80 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id String  @id @default(cuid())
+  telegrammId String @unique
+  username String?
+  firstname String?
+
+  streak Int @default(0)
+  dailyGoal Int @default(10)
+  lastStudy DateTime?
+  isPremium Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  reviews Review[]
+  cards UserCard[]
+}
+
+model Deck {
+  id String  @id @default(cuid())
+  name String
+  slug String @unique
+  levet String
+  isPremium Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  cards Card[]
+}
+
+model Card {
+  id          String  @id @default(cuid())
+  deckId      String
+  word        String
+  translation String
+  example     String?
+  audioUrl    String?
+
+  deck Deck @relation(fields: [deckId],references: [id], onDelete: Cascade)
+  UserCards UserCard[]
+  reviews Review[]
+
+  @@index([deckId])
+  // создание обычного индекса для того что бы БД быстрее находил по полю deckId
+}
+
+model UserCard{
+  id          String  @id @default(cuid())
+  userId      String
+  cardId      String
+
+  repetitions Int     @default(0)
+  interval    Int     @default(0)
+  easeFactor  Float   @default(2.5)
+  dueDate     DateTime @default(now())
+  lastReviewed DateTime?
+
+  user  User @relation(fields: [userId],references: [id], onDelete: Cascade)
+  card  Card @relation(fields: [cardId],references: [id], onDelete: Cascade)
+
+  @@unique([userId,cardId])
+  @@index([userId,dueDate])
+}
+
+model Review {
+  id          String  @id @default(cuid())
+  userId      String
+  cardId      String
+  quality     Int
+  createdAt DateTime @default(now())
+  
+  user  User @relation(fields: [userId],references: [id], onDelete: Cascade)
+  card  Card @relation(fields: [cardId],references: [id], onDelete: Cascade)
+
+  @@unique([userId,createdAt])
+  @@unique([cardId,createdAt])
+}
+
